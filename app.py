@@ -74,3 +74,64 @@ if uploaded_file:
     dept_count.plot(kind="bar", ax=ax)
     
     st.pyplot(fig)
+        # =========================
+# PIE CHART
+# =========================
+
+    st.subheader("Department Distribution")
+    
+    fig2, ax2 = plt.subplots()
+    
+    dept_count.plot(
+        kind="pie",
+        autopct="%1.1f%%",
+        ax=ax2
+        )
+    st.pyplot(fig2)
+    
+    # =========================
+# FILTER DATA
+# =========================
+
+    st.subheader("Filter by Department")
+    
+    department = st.selectbox(
+        "Choose Department",
+        cleaned_df["department"].unique()
+        )
+    filtered_df = cleaned_df[
+        cleaned_df["department"] == department
+        ]
+    st.dataframe(filtered_df)
+        # =========================
+# SEARCH EMPLOYEE
+# =========================
+
+    st.subheader("Search Employee")
+    
+    search_name = st.text_input("Enter Employee Name")
+    
+    if search_name:
+        search_df = cleaned_df[
+            cleaned_df["name"].str.contains(
+                search_name,
+                case=False
+                )
+                ]
+        st.dataframe(search_df)
+        
+        st.subheader("KPI Metrics")
+        
+        total_employees = cleaned_df.shape[0]
+        
+        average_salary = cleaned_df["salary"].mean()
+        
+        highest_salary = cleaned_df["salary"].max()
+        
+        col1, col2, col3 = st.columns(3)
+        
+        col1.metric("Total Employees", total_employees)
+        
+        col2.metric("Average Salary", round(average_salary, 2))
+        
+        col3.metric("Highest Salary", highest_salary)
