@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 st.title("AI-Powered Intelligent ETL Platform")
 
@@ -58,3 +59,18 @@ if uploaded_file:
     rows_removed = df.shape[0] - cleaned_df.shape[0]
     
     st.write("Rows Removed:", rows_removed)
+     # =========================
+# DEPARTMENT ANALYTICS
+# =========================
+
+    st.subheader("Department-wise Employee Count")
+    
+    dept_count = cleaned_df.groupby("department").size()
+    
+    st.write(dept_count)
+    
+    fig, ax = plt.subplots()
+    
+    dept_count.plot(kind="bar", ax=ax)
+    
+    st.pyplot(fig)
