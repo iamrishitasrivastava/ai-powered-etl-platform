@@ -135,3 +135,17 @@ if uploaded_file:
         col2.metric("Average Salary", round(average_salary, 2))
         
         col3.metric("Highest Salary", highest_salary)
+                # =========================
+# DOWNLOAD CLEANED DATA
+# =========================
+
+        st.subheader("Download Cleaned Dataset")
+        
+        csv = cleaned_df.to_csv(index=False)
+        
+        st.download_button(
+            label="Download Cleaned CSV",
+            data=csv,
+            file_name="cleaned_data.csv",
+            mime="text/csv"
+            )
