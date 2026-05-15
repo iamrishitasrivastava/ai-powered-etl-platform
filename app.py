@@ -93,9 +93,9 @@ if uploaded_file:
 # FILTER DATA
 # =========================
 
-    st.subheader("Filter by Department")
+    st.sidebar.subheader("Filter by Department")
     
-    department = st.selectbox(
+    department = st.sidebar.selectbox(
         "Choose Department",
         cleaned_df["department"].unique()
         )
@@ -109,24 +109,37 @@ if uploaded_file:
 
     st.subheader("Search Employee")
     
-    search_name = st.text_input("Enter Employee Name")
+    search_name = st.sidebar.text_input("Enter Employee Name")
     
     if search_name:
-        search_df = cleaned_df[
-            cleaned_df["name"].str.contains(
+        search_df = filtered_df[
+            filtered_df["name"].str.contains(
                 search_name,
                 case=False
                 )
                 ]
         st.dataframe(search_df)
         
+        final_df = filtered_df
+        
+        if search_name:
+            final_df = search_df
+        
         st.subheader("KPI Metrics")
         
-        total_employees = cleaned_df.shape[0]
+        total_employees = final_df.shape[0]
         
-        average_salary = cleaned_df["salary"].mean()
-        
-        highest_salary = cleaned_df["salary"].max()
+        if final_df.shape[0] > 0:
+            
+            average_salary = final_df["salary"].mean()
+            
+            highest_salary = final_df["salary"].max()
+            
+        else:
+            
+            average_salary = 0
+            
+            highest_salary = 0
         
         col1, col2, col3 = st.columns(3)
         
