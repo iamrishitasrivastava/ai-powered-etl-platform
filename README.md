@@ -9,12 +9,34 @@ This project is an AI-powered ETL platform built using Python, Pandas, and Strea
 - Missing value handling
 - Parquet conversion
 - Streamlit dashboard
+- CSV Upload
+- Data Cleaning
+- Duplicate Removal
+- Missing Value Handling
+- Department Filtering
+- Employee Search
+- KPI Metrics
+- Interactive Charts
+- Download Cleaned CSV
+- Parquet Conversion
+- Streamlit Dashboard
 
 ## Technologies Used
 - Python
 - Pandas
 - PyArrow
 - Streamlit
+- Matplotlib
+- Git
+- GitHub
+
+## Dashboard Functionalities
+
+- Interactive sidebar filters
+- Dynamic KPI metrics
+- Real-time employee search
+- Department-wise analytics
+- Data visualization using charts
 
 ## Run the Project
 
