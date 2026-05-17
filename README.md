@@ -21,6 +21,16 @@ This project is an AI-powered ETL platform built using Python, Pandas, and Strea
 - Parquet Conversion
 - Streamlit Dashboard
 
+## Future Improvements
+
+- SQL Integration
+- AI-generated Insights
+- AWS Cloud Integration
+- PySpark ETL Pipelines
+- Advanced Analytics Dashboard
+- RAG-based CSV Chatbot
+- Streamlit Deployment
+
 ## Technologies Used
 - Python
 - Pandas
