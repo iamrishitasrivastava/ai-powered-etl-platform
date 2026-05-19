@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import sqlite3
 
 # =========================
 # TITLE
@@ -25,7 +26,10 @@ page = st.sidebar.radio(
 # FILE UPLOAD
 # =========================
 
-uploaded_file = st.file_uploader("Upload CSV File")
+uploaded_file = st.file_uploader(
+    "Upload CSV File",
+    type=["csv"]
+    )
 
 if uploaded_file:
 
@@ -42,6 +46,28 @@ if uploaded_file:
     cleaned_df = df.drop_duplicates()
 
     cleaned_df["salary"] = cleaned_df["salary"].fillna(0)
+    
+    conn = sqlite3.connect(
+        "employees.db"
+        )
+    
+    
+    cleaned_df.to_sql(
+        "employees",
+        conn,
+        if_exists="replace",
+        index=False
+        )
+    
+    # =========================
+# SQL QUERY
+# =========================
+
+    query = "SELECT * FROM employees"
+    sql_df = pd.read_sql_query(
+        query,
+        conn
+        )
 
     # =========================
     # FILTER DATA
@@ -143,12 +169,16 @@ if uploaded_file:
         rows_removed = df.shape[0] - cleaned_df.shape[0]
 
         st.write("Rows Removed:", rows_removed)
-
+        
         # FILTERED DATA
 
         st.subheader("Filtered Employees")
-
+        
         st.dataframe(final_df)
+        
+        st.subheader("SQL Query Result")
+        
+        st.dataframe(sql_df)
 
         # KPI METRICS
 
