@@ -29,7 +29,7 @@ page = st.sidebar.radio(
 uploaded_file = st.file_uploader(
     "Upload CSV File",
     type=["csv"]
-    )
+)
 
 if uploaded_file:
 
@@ -46,28 +46,19 @@ if uploaded_file:
     cleaned_df = df.drop_duplicates()
 
     cleaned_df["salary"] = cleaned_df["salary"].fillna(0)
-    
-    conn = sqlite3.connect(
-        "employees.db"
-        )
-    
-    
+
+    # =========================
+    # SQLITE DATABASE
+    # =========================
+
+    conn = sqlite3.connect("employees.db")
+
     cleaned_df.to_sql(
         "employees",
         conn,
         if_exists="replace",
         index=False
-        )
-    
-    # =========================
-# SQL QUERY
-# =========================
-
-    query = "SELECT * FROM employees"
-    sql_df = pd.read_sql_query(
-        query,
-        conn
-        )
+    )
 
     # =========================
     # FILTER DATA
@@ -108,6 +99,48 @@ if uploaded_file:
         search_df = filtered_df
 
     # =========================
+    # SQL QUERY
+    # =========================
+
+    query = f"""
+    SELECT *
+    FROM employees
+    WHERE department = '{department}'
+    AND name LIKE '%{search_name}%'
+    """
+
+    sql_df = pd.read_sql_query(
+        query,
+        conn
+    )
+
+    # =========================
+    # SQL ANALYTICS QUERY
+    # =========================
+
+    analytics_query = """
+    
+    SELECT
+    
+    department,
+
+    COUNT(*) as total_employees,
+
+    AVG(salary) as average_salary,
+
+    MAX(salary) as highest_salary
+    
+    FROM employees
+    
+    GROUP BY department
+    """
+
+    analytics_df = pd.read_sql_query(
+        analytics_query,
+        conn
+    )
+
+    # =========================
     # FINAL DATA
     # =========================
 
@@ -129,7 +162,6 @@ if uploaded_file:
         st.subheader("Dataset Information")
 
         st.write("Rows:", df.shape[0])
-
         st.write("Columns:", df.shape[1])
 
         # MISSING VALUES
@@ -155,7 +187,6 @@ if uploaded_file:
         st.subheader("Cleaned Dataset Information")
 
         st.write("Rows:", cleaned_df.shape[0])
-
         st.write("Columns:", cleaned_df.shape[1])
 
         # BEFORE VS AFTER
@@ -163,22 +194,40 @@ if uploaded_file:
         st.subheader("Before vs After Cleaning")
 
         st.write("Original Rows:", df.shape[0])
-
         st.write("Cleaned Rows:", cleaned_df.shape[0])
 
         rows_removed = df.shape[0] - cleaned_df.shape[0]
 
         st.write("Rows Removed:", rows_removed)
-        
+
         # FILTERED DATA
 
         st.subheader("Filtered Employees")
-        
+
         st.dataframe(final_df)
-        
+
+        # SQL QUERY RESULT
+
         st.subheader("SQL Query Result")
-        
+
         st.dataframe(sql_df)
+
+        # SQL ANALYTICS RESULT
+
+        st.subheader("SQL Analytics Result")
+
+        st.dataframe(analytics_df)
+        
+        fig6, ax6 = plt.subplots()
+        
+        analytics_df.plot(
+             x="department",
+             y="average_salary",
+             kind="bar",
+             ax=ax6
+             )
+        
+        st.pyplot(fig6)
 
         # KPI METRICS
 
@@ -305,9 +354,8 @@ if uploaded_file:
             "-",
             round(highest_salary_value, 2)
         )
-        
+
         # SALARY DISTRIBUTION
-        
 
         st.subheader("Salary Distribution")
 
@@ -319,22 +367,24 @@ if uploaded_file:
         )
 
         st.pyplot(fig4)
-        # =========================
-# CITY ANALYTICS
-# =========================
+
+        # CITY ANALYTICS
+
         st.subheader("City-wise Employee Count")
-        
+
         city_count = cleaned_df.groupby(
             "city"
-            ).size()
-        
+        ).size()
+
         st.dataframe(city_count)
-        
+
         fig5, ax5 = plt.subplots()
+
         city_count.plot(
             kind="bar",
             ax=ax5
-            )
+        )
+
         st.pyplot(fig5)
 
     # =========================
