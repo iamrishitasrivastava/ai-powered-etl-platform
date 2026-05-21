@@ -81,9 +81,15 @@ if uploaded_file:
 
     cleaned_df = df.drop_duplicates()
 
-    if "salary" in cleaned_df.columns:
+    # FILL NUMERIC NULLS
 
-        cleaned_df["salary"] = cleaned_df["salary"].fillna(0)
+    numeric_fill_columns = cleaned_df.select_dtypes(
+        include=["int64", "float64"]
+    ).columns
+
+    for col in numeric_fill_columns:
+
+        cleaned_df[col] = cleaned_df[col].fillna(0)
 
     # SAVE TABLE
 
@@ -159,6 +165,26 @@ if len(available_tables) > 0:
     st.sidebar.dataframe(
         columns_df[["name", "type"]]
     )
+
+    # =========================
+    # SAMPLE JOIN QUERY
+    # =========================
+
+    st.subheader("Sample JOIN Query")
+
+    st.code("""
+
+SELECT e.name,
+f.bonus,
+f.project
+
+FROM employees e
+
+JOIN finance f
+
+ON e.id = f.employee_id
+
+""", language="sql")
 
     # =========================
     # DELETE TABLE FEATURE
@@ -242,6 +268,58 @@ if len(available_tables) > 0:
         search_df = filtered_df
 
     # =========================
+    # AI SQL SUGGESTIONS
+    # =========================
+
+    st.subheader("AI SQL Suggestions")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button("Show Top Rows"):
+
+            st.session_state.custom_query = f"""
+
+            SELECT *
+
+            FROM {selected_table}
+
+            LIMIT 5
+
+            """
+
+        if st.button("Show Total Rows"):
+
+            st.session_state.custom_query = f"""
+
+            SELECT COUNT(*) as total_rows
+
+            FROM {selected_table}
+
+            """
+
+    with col2:
+
+        if st.button("Show All Data"):
+
+            st.session_state.custom_query = f"""
+
+            SELECT *
+
+            FROM {selected_table}
+
+            """
+
+        if st.button("Show Column Names"):
+
+            st.session_state.custom_query = f"""
+
+            PRAGMA table_info({selected_table})
+
+            """
+
+    # =========================
     # CUSTOM SQL INPUT
     # =========================
 
@@ -249,8 +327,34 @@ if len(available_tables) > 0:
 
     custom_query = st.text_area(
         "Enter SQL Query",
-        f"SELECT * FROM {selected_table}"
+        value=st.session_state.get(
+            "custom_query",
+            f"SELECT * FROM {selected_table}"
+        )
     )
+
+    # =========================
+    # SQL QUERY HISTORY
+    # =========================
+
+    if "query_history" not in st.session_state:
+
+        st.session_state.query_history = []
+
+    if custom_query not in st.session_state.query_history:
+
+        st.session_state.query_history.append(
+            custom_query
+        )
+
+    st.sidebar.subheader("Recent Queries")
+
+    for q in st.session_state.query_history[-5:]:
+
+        st.sidebar.code(
+            q,
+            language="sql"
+        )
 
     # =========================
     # SQL QUERY EXECUTION
@@ -312,13 +416,9 @@ if len(available_tables) > 0:
 
     if page == "Dashboard":
 
-        # RAW DATA
-
         st.subheader("Raw Dataset")
 
         st.dataframe(df)
-
-        # DATASET INFO
 
         st.subheader("Dataset Information")
 
@@ -326,25 +426,17 @@ if len(available_tables) > 0:
 
         st.write("Columns:", df.shape[1])
 
-        # MISSING VALUES
-
         st.subheader("Missing Values")
 
         st.write(df.isnull().sum())
-
-        # DUPLICATES
 
         st.subheader("Duplicate Rows")
 
         st.write(df.duplicated().sum())
 
-        # CLEANED DATA
-
         st.subheader("Cleaned Dataset")
 
         st.dataframe(cleaned_df)
-
-        # BEFORE VS AFTER
 
         st.subheader("Before vs After Cleaning")
 
@@ -356,13 +448,9 @@ if len(available_tables) > 0:
 
         st.write("Rows Removed:", rows_removed)
 
-        # FILTERED DATA
-
-        st.subheader("Filtered Employees")
+        st.subheader("Filtered Data")
 
         st.dataframe(final_df)
-
-        # SQL QUERY RESULT
 
         st.subheader("SQL Query Result")
 
@@ -393,54 +481,52 @@ if len(available_tables) > 0:
 
             st.dataframe(analytics_df)
 
-            # SQL ANALYTICS CHART
-
-            fig6, ax6 = plt.subplots()
+            fig1, ax1 = plt.subplots()
 
             analytics_df.plot(
                 x="department",
                 y="average_salary",
                 kind="bar",
-                ax=ax6
+                ax=ax1
             )
 
-            st.pyplot(fig6)
+            st.pyplot(fig1)
 
         # KPI METRICS
 
-        if "salary" in final_df.columns:
+        numeric_columns = cleaned_df.select_dtypes(
+            include=["int64", "float64"]
+        ).columns
+
+        if len(numeric_columns) > 0:
 
             st.subheader("KPI Metrics")
 
-            total_employees = final_df.shape[0]
+            total_rows = cleaned_df.shape[0]
 
-            if final_df.shape[0] > 0:
+            avg_value = cleaned_df[
+                numeric_columns[0]
+            ].mean()
 
-                average_salary = final_df["salary"].mean()
-
-                highest_salary = final_df["salary"].max()
-
-            else:
-
-                average_salary = 0
-
-                highest_salary = 0
+            max_value = cleaned_df[
+                numeric_columns[0]
+            ].max()
 
             col1, col2, col3 = st.columns(3)
 
             col1.metric(
-                "Total Employees",
-                total_employees
+                "Total Rows",
+                total_rows
             )
 
             col2.metric(
-                "Average Salary",
-                round(average_salary, 2)
+                "Average Value",
+                round(avg_value, 2)
             )
 
             col3.metric(
-                "Highest Salary",
-                highest_salary
+                "Maximum Value",
+                max_value
             )
 
         # DOWNLOAD CLEANED DATA
@@ -462,6 +548,70 @@ if len(available_tables) > 0:
 
     elif page == "Analytics":
 
+        # =========================
+        # DYNAMIC NUMERIC COLUMNS
+        # =========================
+
+        numeric_columns = cleaned_df.select_dtypes(
+            include=["int64", "float64"]
+        ).columns
+
+        # =========================
+        # AUTO HISTOGRAMS
+        # =========================
+
+        st.subheader("Numeric Column Visualizations")
+
+        for col in numeric_columns:
+
+            fig2, ax2 = plt.subplots()
+
+            cleaned_df[col].plot(
+                kind="hist",
+                ax=ax2
+            )
+
+            ax2.set_title(f"{col} Distribution")
+
+            st.pyplot(fig2)
+
+        # =========================
+        # AUTO BAR CHARTS
+        # =========================
+
+        st.subheader("Average Values")
+
+        for col in numeric_columns:
+
+            fig3, ax3 = plt.subplots()
+
+            ax3.bar(
+                [col],
+                [cleaned_df[col].mean()]
+            )
+
+            ax3.set_title(f"Average {col}")
+
+            st.pyplot(fig3)
+
+        # =========================
+        # CORRELATION MATRIX
+        # =========================
+
+        if len(numeric_columns) > 1:
+
+            st.subheader("Correlation Matrix")
+
+            correlation_df = cleaned_df[
+                numeric_columns
+            ].corr()
+
+            st.dataframe(correlation_df)
+
+        # =========================
+        # EMPLOYEE ANALYTICS
+        # =========================
+
         if "department" in cleaned_df.columns:
 
             st.subheader("Department-wise Employee Count")
@@ -472,28 +622,32 @@ if len(available_tables) > 0:
 
             st.write(dept_count)
 
-            fig, ax = plt.subplots()
+            fig4, ax4 = plt.subplots()
 
             dept_count.plot(
                 kind="bar",
-                ax=ax
+                ax=ax4
             )
 
-            st.pyplot(fig)
+            st.pyplot(fig4)
 
             # PIE CHART
 
             st.subheader("Department Distribution")
 
-            fig2, ax2 = plt.subplots()
+            fig5, ax5 = plt.subplots()
 
             dept_count.plot(
                 kind="pie",
                 autopct="%1.1f%%",
-                ax=ax2
+                ax=ax5
             )
 
-            st.pyplot(fig2)
+            st.pyplot(fig5)
+
+        # =========================
+        # SALARY ANALYTICS
+        # =========================
 
         if "salary" in cleaned_df.columns and "department" in cleaned_df.columns:
 
@@ -507,14 +661,14 @@ if len(available_tables) > 0:
 
             st.dataframe(salary_analysis)
 
-            fig3, ax3 = plt.subplots()
+            fig6, ax6 = plt.subplots()
 
             salary_analysis.plot(
                 kind="bar",
-                ax=ax3
+                ax=ax6
             )
 
-            st.pyplot(fig3)
+            st.pyplot(fig6)
 
             highest_department = salary_analysis.idxmax()
 
@@ -527,19 +681,25 @@ if len(available_tables) > 0:
             st.write(
                 highest_department,
                 "-",
-               round(highest_salary_value, 2)
+                round(highest_salary_value, 2)
             )
+
+            # SALARY DISTRIBUTION
 
             st.subheader("Salary Distribution")
 
-            fig4, ax4 = plt.subplots()
+            fig7, ax7 = plt.subplots()
 
             cleaned_df["salary"].plot(
                 kind="hist",
-                ax=ax4
+                ax=ax7
             )
 
-            st.pyplot(fig4)
+            st.pyplot(fig7)
+
+        # =========================
+        # CITY ANALYTICS
+        # =========================
 
         if "city" in cleaned_df.columns:
 
@@ -551,14 +711,14 @@ if len(available_tables) > 0:
 
             st.dataframe(city_count)
 
-            fig5, ax5 = plt.subplots()
+            fig8, ax8 = plt.subplots()
 
             city_count.plot(
                 kind="bar",
-                ax=ax5
+                ax=ax8
             )
 
-            st.pyplot(fig5)
+            st.pyplot(fig8)
 
     # =========================
     # TOP EARNERS PAGE
