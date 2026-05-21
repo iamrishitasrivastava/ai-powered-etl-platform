@@ -23,6 +23,33 @@ page = st.sidebar.radio(
 )
 
 # =========================
+# SQLITE CONNECTION
+# =========================
+
+conn = sqlite3.connect("employees.db")
+
+# =========================
+# SHOW DATABASE TABLES
+# =========================
+
+tables_query = """
+
+SELECT name
+
+FROM sqlite_master
+
+WHERE type='table'
+
+"""
+
+tables_df = pd.read_sql_query(
+    tables_query,
+    conn
+)
+
+available_tables = tables_df["name"].tolist()
+
+# =========================
 # FILE UPLOAD
 # =========================
 
@@ -31,114 +58,247 @@ uploaded_file = st.file_uploader(
     type=["csv"]
 )
 
+# =========================
+# TABLE NAME INPUT
+# =========================
+
+table_name = st.text_input(
+    "Enter New Table Name",
+    "employees"
+)
+
+# =========================
+# SAVE CSV TO SQLITE
+# =========================
+
 if uploaded_file:
 
-    # =========================
     # READ CSV
-    # =========================
 
     df = pd.read_csv(uploaded_file)
 
-    # =========================
-    # DATA CLEANING
-    # =========================
+    # CLEAN DATA
 
     cleaned_df = df.drop_duplicates()
 
-    cleaned_df["salary"] = cleaned_df["salary"].fillna(0)
+    if "salary" in cleaned_df.columns:
 
-    # =========================
-    # SQLITE DATABASE
-    # =========================
+        cleaned_df["salary"] = cleaned_df["salary"].fillna(0)
 
-    conn = sqlite3.connect("employees.db")
+    # SAVE TABLE
 
     cleaned_df.to_sql(
-        "employees",
+        table_name,
         conn,
         if_exists="replace",
         index=False
     )
 
+    st.success(f"Table '{table_name}' saved successfully!")
+
+    # REFRESH TABLE LIST
+
+    tables_df = pd.read_sql_query(
+        tables_query,
+        conn
+    )
+
+    available_tables = tables_df["name"].tolist()
+
+# =========================
+# TABLE SELECTOR
+# =========================
+
+if len(available_tables) > 0:
+
+    selected_table = st.sidebar.selectbox(
+        "Select Database Table",
+        available_tables
+    )
+
+    # =========================
+    # TABLE ROW COUNT
+    # =========================
+
+    row_count_query = f"""
+
+    SELECT COUNT(*) as total_rows
+
+    FROM {selected_table}
+
+    """
+
+    row_count_df = pd.read_sql_query(
+        row_count_query,
+        conn
+    )
+
+    total_rows = row_count_df["total_rows"][0]
+
+    st.sidebar.success(
+        f"{selected_table} → {total_rows} rows"
+    )
+
+    # =========================
+    # SHOW TABLE COLUMNS
+    # =========================
+
+    columns_query = f"""
+
+    PRAGMA table_info({selected_table})
+
+    """
+
+    columns_df = pd.read_sql_query(
+        columns_query,
+        conn
+    )
+
+    st.sidebar.subheader("Table Columns")
+
+    st.sidebar.dataframe(
+        columns_df[["name", "type"]]
+    )
+
+    # =========================
+    # DELETE TABLE FEATURE
+    # =========================
+
+    st.sidebar.subheader("Delete Table")
+
+    if st.sidebar.button("Delete Selected Table"):
+
+        conn.execute(
+            f"DROP TABLE IF EXISTS {selected_table}"
+        )
+
+        conn.commit()
+
+        st.sidebar.success(
+            f"Table '{selected_table}' deleted!"
+        )
+
+        st.rerun()
+
+    # =========================
+    # LOAD SELECTED TABLE
+    # =========================
+
+    cleaned_df = pd.read_sql_query(
+        f"SELECT * FROM {selected_table}",
+        conn
+    )
+
+    df = cleaned_df.copy()
+
     # =========================
     # FILTER DATA
     # =========================
 
-    st.sidebar.subheader("Filter by Department")
+    if "department" in cleaned_df.columns:
 
-    department = st.sidebar.selectbox(
-        "Choose Department",
-        cleaned_df["department"].unique()
-    )
+        st.sidebar.subheader("Filter by Department")
 
-    filtered_df = cleaned_df[
-        cleaned_df["department"] == department
-    ]
+        department = st.sidebar.selectbox(
+            "Choose Department",
+            cleaned_df["department"].unique()
+        )
+
+        filtered_df = cleaned_df[
+            cleaned_df["department"] == department
+        ]
+
+    else:
+
+        filtered_df = cleaned_df
 
     # =========================
     # SEARCH EMPLOYEE
     # =========================
 
-    st.sidebar.subheader("Search Employee")
+    if "name" in cleaned_df.columns:
 
-    search_name = st.sidebar.text_input(
-        "Enter Employee Name"
-    )
+        st.sidebar.subheader("Search Employee")
 
-    if search_name:
+        search_name = st.sidebar.text_input(
+            "Enter Employee Name"
+        )
 
-        search_df = filtered_df[
-            filtered_df["name"].str.contains(
-                search_name,
-                case=False
-            )
-        ]
+        if search_name:
+
+            search_df = filtered_df[
+                filtered_df["name"].astype(str).str.contains(
+                    search_name,
+                    case=False
+                )
+            ]
+
+        else:
+
+            search_df = filtered_df
 
     else:
 
         search_df = filtered_df
 
     # =========================
-    # SQL QUERY
+    # CUSTOM SQL INPUT
     # =========================
 
-    query = f"""
-    SELECT *
-    FROM employees
-    WHERE department = '{department}'
-    AND name LIKE '%{search_name}%'
-    """
+    st.subheader("Custom SQL Query")
 
-    sql_df = pd.read_sql_query(
-        query,
-        conn
+    custom_query = st.text_area(
+        "Enter SQL Query",
+        f"SELECT * FROM {selected_table}"
     )
+
+    # =========================
+    # SQL QUERY EXECUTION
+    # =========================
+
+    try:
+
+        sql_df = pd.read_sql_query(
+            custom_query,
+            conn
+        )
+
+    except Exception as e:
+
+        st.error(f"SQL Error: {e}")
+
+        sql_df = pd.DataFrame()
 
     # =========================
     # SQL ANALYTICS QUERY
     # =========================
 
-    analytics_query = """
-    
-    SELECT
-    
-    department,
+    analytics_df = pd.DataFrame()
 
-    COUNT(*) as total_employees,
+    if "department" in cleaned_df.columns and "salary" in cleaned_df.columns:
 
-    AVG(salary) as average_salary,
+        analytics_query = f"""
 
-    MAX(salary) as highest_salary
-    
-    FROM employees
-    
-    GROUP BY department
-    """
+        SELECT
 
-    analytics_df = pd.read_sql_query(
-        analytics_query,
-        conn
-    )
+            department,
+
+            COUNT(*) as total_employees,
+
+            AVG(salary) as average_salary,
+
+            MAX(salary) as highest_salary
+
+        FROM {selected_table}
+
+        GROUP BY department
+
+        """
+
+        analytics_df = pd.read_sql_query(
+            analytics_query,
+            conn
+        )
 
     # =========================
     # FINAL DATA
@@ -155,6 +315,7 @@ if uploaded_file:
         # RAW DATA
 
         st.subheader("Raw Dataset")
+
         st.dataframe(df)
 
         # DATASET INFO
@@ -162,6 +323,7 @@ if uploaded_file:
         st.subheader("Dataset Information")
 
         st.write("Rows:", df.shape[0])
+
         st.write("Columns:", df.shape[1])
 
         # MISSING VALUES
@@ -182,18 +344,12 @@ if uploaded_file:
 
         st.dataframe(cleaned_df)
 
-        # CLEANED DATA INFO
-
-        st.subheader("Cleaned Dataset Information")
-
-        st.write("Rows:", cleaned_df.shape[0])
-        st.write("Columns:", cleaned_df.shape[1])
-
         # BEFORE VS AFTER
 
         st.subheader("Before vs After Cleaning")
 
         st.write("Original Rows:", df.shape[0])
+
         st.write("Cleaned Rows:", cleaned_df.shape[0])
 
         rows_removed = df.shape[0] - cleaned_df.shape[0]
@@ -212,59 +368,82 @@ if uploaded_file:
 
         st.dataframe(sql_df)
 
+        # DOWNLOAD SQL RESULT
+
+        sql_csv = sql_df.to_csv(index=False)
+
+        st.download_button(
+            label="Download SQL Result CSV",
+            data=sql_csv,
+            file_name="sql_result.csv",
+            mime="text/csv"
+        )
+
+        # AVAILABLE TABLES
+
+        st.subheader("Available Database Tables")
+
+        st.dataframe(tables_df)
+
         # SQL ANALYTICS RESULT
 
-        st.subheader("SQL Analytics Result")
+        if not analytics_df.empty:
 
-        st.dataframe(analytics_df)
-        
-        fig6, ax6 = plt.subplots()
-        
-        analytics_df.plot(
-             x="department",
-             y="average_salary",
-             kind="bar",
-             ax=ax6
-             )
-        
-        st.pyplot(fig6)
+            st.subheader("SQL Analytics Result")
+
+            st.dataframe(analytics_df)
+
+            # SQL ANALYTICS CHART
+
+            fig6, ax6 = plt.subplots()
+
+            analytics_df.plot(
+                x="department",
+                y="average_salary",
+                kind="bar",
+                ax=ax6
+            )
+
+            st.pyplot(fig6)
 
         # KPI METRICS
 
-        st.subheader("KPI Metrics")
+        if "salary" in final_df.columns:
 
-        total_employees = final_df.shape[0]
+            st.subheader("KPI Metrics")
 
-        if final_df.shape[0] > 0:
+            total_employees = final_df.shape[0]
 
-            average_salary = final_df["salary"].mean()
+            if final_df.shape[0] > 0:
 
-            highest_salary = final_df["salary"].max()
+                average_salary = final_df["salary"].mean()
 
-        else:
+                highest_salary = final_df["salary"].max()
 
-            average_salary = 0
+            else:
 
-            highest_salary = 0
+                average_salary = 0
 
-        col1, col2, col3 = st.columns(3)
+                highest_salary = 0
 
-        col1.metric(
-            "Total Employees",
-            total_employees
-        )
+            col1, col2, col3 = st.columns(3)
 
-        col2.metric(
-            "Average Salary",
-            round(average_salary, 2)
-        )
+            col1.metric(
+                "Total Employees",
+                total_employees
+            )
 
-        col3.metric(
-            "Highest Salary",
-            highest_salary
-        )
+            col2.metric(
+                "Average Salary",
+                round(average_salary, 2)
+            )
 
-        # DOWNLOAD BUTTON
+            col3.metric(
+                "Highest Salary",
+                highest_salary
+            )
+
+        # DOWNLOAD CLEANED DATA
 
         st.subheader("Download Cleaned Dataset")
 
@@ -283,109 +462,103 @@ if uploaded_file:
 
     elif page == "Analytics":
 
-        # DEPARTMENT COUNT
+        if "department" in cleaned_df.columns:
 
-        st.subheader("Department-wise Employee Count")
+            st.subheader("Department-wise Employee Count")
 
-        dept_count = cleaned_df.groupby(
-            "department"
-        ).size()
+            dept_count = cleaned_df.groupby(
+                "department"
+            ).size()
 
-        st.write(dept_count)
+            st.write(dept_count)
 
-        fig, ax = plt.subplots()
+            fig, ax = plt.subplots()
 
-        dept_count.plot(
-            kind="bar",
-            ax=ax
-        )
+            dept_count.plot(
+                kind="bar",
+                ax=ax
+            )
 
-        st.pyplot(fig)
+            st.pyplot(fig)
 
-        # PIE CHART
+            # PIE CHART
 
-        st.subheader("Department Distribution")
+            st.subheader("Department Distribution")
 
-        fig2, ax2 = plt.subplots()
+            fig2, ax2 = plt.subplots()
 
-        dept_count.plot(
-            kind="pie",
-            autopct="%1.1f%%",
-            ax=ax2
-        )
+            dept_count.plot(
+                kind="pie",
+                autopct="%1.1f%%",
+                ax=ax2
+            )
 
-        st.pyplot(fig2)
+            st.pyplot(fig2)
 
-        # SALARY ANALYTICS
+        if "salary" in cleaned_df.columns and "department" in cleaned_df.columns:
 
-        st.subheader(
-            "Average Salary by Department"
-        )
+            st.subheader(
+                "Average Salary by Department"
+            )
 
-        salary_analysis = cleaned_df.groupby(
-            "department"
-        )["salary"].mean()
+            salary_analysis = cleaned_df.groupby(
+                "department"
+            )["salary"].mean()
 
-        st.dataframe(salary_analysis)
+            st.dataframe(salary_analysis)
 
-        # SALARY BAR CHART
+            fig3, ax3 = plt.subplots()
 
-        fig3, ax3 = plt.subplots()
+            salary_analysis.plot(
+                kind="bar",
+                ax=ax3
+            )
 
-        salary_analysis.plot(
-            kind="bar",
-            ax=ax3
-        )
+            st.pyplot(fig3)
 
-        st.pyplot(fig3)
+            highest_department = salary_analysis.idxmax()
 
-        # HIGHEST PAYING DEPARTMENT
+            highest_salary_value = salary_analysis.max()
 
-        highest_department = salary_analysis.idxmax()
+            st.subheader(
+                "Highest Paying Department"
+            )
 
-        highest_salary_value = salary_analysis.max()
+            st.write(
+                highest_department,
+                "-",
+               round(highest_salary_value, 2)
+            )
 
-        st.subheader(
-            "Highest Paying Department"
-        )
+            st.subheader("Salary Distribution")
 
-        st.write(
-            highest_department,
-            "-",
-            round(highest_salary_value, 2)
-        )
+            fig4, ax4 = plt.subplots()
 
-        # SALARY DISTRIBUTION
+            cleaned_df["salary"].plot(
+                kind="hist",
+                ax=ax4
+            )
 
-        st.subheader("Salary Distribution")
+            st.pyplot(fig4)
 
-        fig4, ax4 = plt.subplots()
+        if "city" in cleaned_df.columns:
 
-        cleaned_df["salary"].plot(
-            kind="hist",
-            ax=ax4
-        )
+            st.subheader("City-wise Employee Count")
 
-        st.pyplot(fig4)
+            city_count = cleaned_df.groupby(
+                "city"
+            ).size()
 
-        # CITY ANALYTICS
+            st.dataframe(city_count)
 
-        st.subheader("City-wise Employee Count")
+            fig5, ax5 = plt.subplots()
 
-        city_count = cleaned_df.groupby(
-            "city"
-        ).size()
+            city_count.plot(
+                kind="bar",
+                ax=ax5
+            )
 
-        st.dataframe(city_count)
-
-        fig5, ax5 = plt.subplots()
-
-        city_count.plot(
-            kind="bar",
-            ax=ax5
-        )
-
-        st.pyplot(fig5)
+            st.pyplot(fig5)
 
     # =========================
     # TOP EARNERS PAGE
@@ -393,11 +566,13 @@ if uploaded_file:
 
     elif page == "Top Earners":
 
-        st.subheader("Top Earners")
+        if "salary" in cleaned_df.columns:
 
-        top_earners = cleaned_df.sort_values(
-            by="salary",
-            ascending=False
-        ).head(5)
+            st.subheader("Top Earners")
 
-        st.dataframe(top_earners)
+            top_earners = cleaned_df.sort_values(
+                by="salary",
+                ascending=False
+            ).head(5)
+
+            st.dataframe(top_earners)
