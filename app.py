@@ -92,25 +92,39 @@ if uploaded_file:
 
         cleaned_df[col] = cleaned_df[col].fillna(0)
 
-    # SAVE TABLE
+    # =========================
+    # CHECK IF TABLE EXISTS
+    # =========================
 
-    cleaned_df.to_sql(
-        table_name,
-        conn,
-        if_exists="replace",
-        index=False
-    )
+    if table_name in available_tables:
 
-    st.success(f"Table '{table_name}' saved successfully!")
+        st.error(
+            f"Table '{table_name}' already exists! Please use another table name."
+        )
 
-    # REFRESH TABLE LIST
+    else:
 
-    tables_df = pd.read_sql_query(
-        tables_query,
-        conn
-    )
+        # SAVE TABLE
 
-    available_tables = tables_df["name"].tolist()
+        cleaned_df.to_sql(
+            table_name,
+            conn,
+            if_exists="fail",
+            index=False
+        )
+
+        st.success(
+            f"Table '{table_name}' saved successfully!"
+        )
+
+        # REFRESH TABLE LIST
+
+        tables_df = pd.read_sql_query(
+            tables_query,
+            conn
+        )
+
+        available_tables = tables_df["name"].tolist()
 
 # =========================
 # TABLE SELECTOR
@@ -474,76 +488,6 @@ ON e.id = f.employee_id
 
         st.dataframe(tables_df)
 
-        # SQL ANALYTICS RESULT
-
-        if not analytics_df.empty:
-
-            st.subheader("SQL Analytics Result")
-
-            st.dataframe(analytics_df)
-
-            fig1 = px.bar(
-                analytics_df,
-                x="department",
-                y="average_salary",
-                title="Average Salary by Department"
-            )
-
-            st.plotly_chart(
-                fig1,
-                use_container_width=True
-            )
-
-        # KPI METRICS
-
-        numeric_columns = cleaned_df.select_dtypes(
-            include=["int64", "float64"]
-        ).columns
-
-        if len(numeric_columns) > 0:
-
-            st.subheader("KPI Metrics")
-
-            total_rows = cleaned_df.shape[0]
-
-            avg_value = cleaned_df[
-                numeric_columns[0]
-            ].mean()
-
-            max_value = cleaned_df[
-                numeric_columns[0]
-            ].max()
-
-            col1, col2, col3 = st.columns(3)
-
-            col1.metric(
-                "Total Rows",
-                total_rows
-            )
-
-            col2.metric(
-                "Average Value",
-                round(avg_value, 2)
-            )
-
-            col3.metric(
-                "Maximum Value",
-                max_value
-            )
-
-        # DOWNLOAD CLEANED DATA
-
-        st.subheader("Download Cleaned Dataset")
-
-        csv = cleaned_df.to_csv(index=False)
-
-        st.download_button(
-            label="Download Cleaned CSV",
-            data=csv,
-            file_name="cleaned_data.csv",
-            mime="text/csv"
-        )
-
     # =========================
     # ANALYTICS PAGE
     # =========================
@@ -551,16 +495,71 @@ ON e.id = f.employee_id
     elif page == "Analytics":
 
         # =========================
-        # DYNAMIC NUMERIC COLUMNS
+        # JOIN ANALYTICS
+        # =========================
+
+        if "employees" in available_tables and "finance" in available_tables:
+
+            st.subheader("Employee + Finance JOIN Analytics")
+
+            try:
+
+                join_query = """
+
+                SELECT
+                    e.name,
+                    e.department,
+                    e.salary,
+                    f.bonus,
+                    f.project,
+                    f.performance_rating
+
+                FROM employees e
+
+                JOIN finance f
+
+                ON e.id = f.employee_id
+
+                """
+
+                join_df = pd.read_sql_query(
+                    join_query,
+                    conn
+                )
+
+                st.dataframe(join_df)
+
+                st.subheader("Average Bonus by Department")
+
+                bonus_analysis = join_df.groupby(
+                    "department"
+                )["bonus"].mean()
+
+                bonus_df = bonus_analysis.reset_index()
+
+                fig_join = px.bar(
+                    bonus_df,
+                    x="department",
+                    y="bonus",
+                    title="Average Bonus by Department"
+                )
+
+                st.plotly_chart(
+                    fig_join,
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(f"JOIN Error: {e}")
+
+        # =========================
+        # NUMERIC COLUMNS
         # =========================
 
         numeric_columns = cleaned_df.select_dtypes(
             include=["int64", "float64"]
         ).columns
-
-        # =========================
-        # AUTO HISTOGRAMS
-        # =========================
 
         st.subheader("Numeric Column Visualizations")
 
@@ -578,31 +577,6 @@ ON e.id = f.employee_id
             )
 
         # =========================
-        # AUTO BAR CHARTS
-        # =========================
-
-        st.subheader("Average Values")
-
-        for col in numeric_columns:
-
-            avg_df = pd.DataFrame({
-                "Column": [col],
-                "Average": [cleaned_df[col].mean()]
-            })
-
-            fig3 = px.bar(
-                avg_df,
-                x="Column",
-                y="Average",
-                title=f"Average {col}"
-            )
-
-            st.plotly_chart(
-                fig3,
-                use_container_width=True
-            )
-
-        # =========================
         # CORRELATION MATRIX
         # =========================
 
@@ -615,136 +589,6 @@ ON e.id = f.employee_id
             ].corr()
 
             st.dataframe(correlation_df)
-
-        # =========================
-        # EMPLOYEE ANALYTICS
-        # =========================
-
-        if "department" in cleaned_df.columns:
-
-            st.subheader("Department-wise Employee Count")
-
-            dept_count = cleaned_df.groupby(
-                "department"
-            ).size()
-
-            st.write(dept_count)
-
-            fig4 = px.bar(
-                x=dept_count.index,
-                y=dept_count.values,
-                labels={
-                    "x": "Department",
-                    "y": "Employees"
-                },
-                title="Department-wise Employee Count"
-            )
-
-            st.plotly_chart(
-                fig4,
-                use_container_width=True
-            )
-
-            # PIE CHART
-
-            st.subheader("Department Distribution")
-
-            fig5, ax5 = plt.subplots()
-
-            dept_count.plot(
-                kind="pie",
-                autopct="%1.1f%%",
-                ax=ax5
-            )
-
-            st.pyplot(fig5)
-
-        # =========================
-        # SALARY ANALYTICS
-        # =========================
-
-        if "salary" in cleaned_df.columns and "department" in cleaned_df.columns:
-
-            st.subheader(
-                "Average Salary by Department"
-            )
-
-            salary_analysis = cleaned_df.groupby(
-                "department"
-            )["salary"].mean()
-
-            st.dataframe(salary_analysis)
-
-            salary_df = salary_analysis.reset_index()
-
-            fig6 = px.bar(
-                salary_df,
-                x="department",
-                y="salary",
-                title="Average Salary by Department"
-            )
-
-            st.plotly_chart(
-                fig6,
-                use_container_width=True
-            )
-
-            highest_department = salary_analysis.idxmax()
-
-            highest_salary_value = salary_analysis.max()
-
-            st.subheader(
-                "Highest Paying Department"
-            )
-
-            st.write(
-                highest_department,
-                "-",
-                round(highest_salary_value, 2)
-            )
-
-            # SALARY DISTRIBUTION
-
-            st.subheader("Salary Distribution")
-
-            fig7 = px.histogram(
-                cleaned_df,
-                x="salary",
-                title="Salary Distribution"
-            )
-
-            st.plotly_chart(
-                fig7,
-                use_container_width=True
-            )
-
-        # =========================
-        # CITY ANALYTICS
-        # =========================
-
-        if "city" in cleaned_df.columns:
-
-            st.subheader("City-wise Employee Count")
-
-            city_count = cleaned_df.groupby(
-                "city"
-            ).size()
-
-            st.dataframe(city_count)
-
-            city_df = city_count.reset_index()
-
-            fig8 = px.bar(
-                city_df,
-                x="city",
-                y=0,
-                title="City-wise Employee Count"
-            )
-
-            st.plotly_chart(
-                fig8,
-                use_container_width=True
-            )
 
     # =========================
     # TOP EARNERS PAGE
