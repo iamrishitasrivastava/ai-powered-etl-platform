@@ -2,9 +2,9 @@
 
 ## Overview
 
-This project is an AI-powered ETL, analytics, and mini data warehouse platform built using Python, Pandas, SQLite, and Streamlit.
+This project is an AI-powered ETL, analytics, and mini data warehouse platform built using Python, Pandas, SQLite, Streamlit, and Plotly.
 
-The platform allows users to upload CSV datasets, clean and transform data, store multiple datasets into a warehouse-style SQLite database, perform SQL analytics, generate visualizations, and interact with dynamic dashboards.
+The platform allows users to upload CSV datasets, clean and transform data, store multiple datasets into a warehouse-style SQLite database, perform SQL analytics, generate interactive visualizations, execute JOIN-based analytics, and interact with dynamic dashboards.
 
 It combines concepts from:
 
@@ -12,6 +12,7 @@ It combines concepts from:
 - Data Warehousing
 - SQL Analytics
 - Business Intelligence (BI)
+- Relational Analytics
 - Data Visualization
 - Metadata Management
 
@@ -28,10 +29,11 @@ It combines concepts from:
 - Automatic Numeric Null Filling
 - Data Cleaning Pipeline
 - Multi-table Dataset Storage
+- Warehouse-style Data Persistence
 
 ---
 
-## Data Warehouse Features
+# Data Warehouse Features
 
 - SQLite Data Warehouse Integration
 - Multi-table Support
@@ -40,11 +42,12 @@ It combines concepts from:
 - Row Count Metadata
 - Schema Inspection
 - Table Deletion Feature
+- Overwrite Protection for Existing Tables
 - Warehouse-style Table Management
 
 ---
 
-## SQL Analytics Engine
+# SQL Analytics Engine
 
 - Custom SQL Query Execution
 - SQL Query Result Viewer
@@ -52,12 +55,13 @@ It combines concepts from:
 - SQL Aggregation Analytics
 - GROUP BY Analytics
 - COUNT, AVG, MAX Queries
-- JOIN Query Examples
+- SQL JOIN Analytics
+- Multi-table Relational Queries
 - AI-style SQL Suggestions
 
 ---
 
-## Analytics & Dashboard
+# Analytics & Dashboard
 
 - Dynamic KPI Metrics
 - Dataset Overview Dashboard
@@ -74,21 +78,52 @@ It combines concepts from:
 - Salary Analytics
 - Department Analytics
 - City-wise Analytics
+- Bonus Analytics
+- Department-wise Bonus Reporting
 
 ---
 
-## Visualization Features
+# Visualization Features
 
+- Interactive Plotly Dashboards
 - Automatic Numeric Column Detection
 - Dynamic Histograms
 - Dynamic Average Charts
 - Correlation Analysis
+- Interactive Hover Analytics
+- Zoomable Charts
 - Analytics Dashboard
 - Interactive Sidebar Navigation
 
 ---
 
-## Export Features
+# JOIN Analytics Features
+
+Example JOIN Query:
+
+```sql
+SELECT e.name,
+e.department,
+e.salary,
+f.bonus,
+f.project
+FROM employees e
+JOIN finance f
+ON e.id = f.employee_id;
+```
+
+### JOIN Analytics Capabilities
+
+- Multi-table SQL JOINs
+- Relational Warehouse Analytics
+- Cross-table Reporting
+- Employee + Finance Analytics
+- Department-wise Bonus Analysis
+- Interactive JOIN Dashboards
+
+---
+
+# Export Features
 
 - Download Cleaned CSV
 - Download SQL Query Results
@@ -102,6 +137,7 @@ It combines concepts from:
 - Pandas
 - SQLite
 - Streamlit
+- Plotly
 - Matplotlib
 - SQL
 - PyArrow
@@ -116,6 +152,8 @@ It combines concepts from:
 - Data Cleaning
 - Data Warehousing
 - SQL Analytics
+- Relational Data Modeling
+- SQL JOIN Operations
 - Metadata Management
 - Schema Inspection
 - OLAP-style Aggregations
@@ -138,12 +176,14 @@ It combines concepts from:
 - Metadata Display
 - Table Schema Viewer
 - Row Count Monitoring
+- Interactive Plotly Visualizations
+- JOIN-based Analytics Reporting
 
 ---
 
 # SQL Features
 
-Example SQL Query:
+## Example SQL Aggregation Query
 
 ```sql
 SELECT department,
@@ -152,10 +192,14 @@ FROM employees
 GROUP BY department;
 ```
 
-Example JOIN Query:
+---
+
+## Example JOIN Query
 
 ```sql
 SELECT e.name,
+e.department,
+e.salary,
 f.bonus,
 f.project
 FROM employees e
@@ -185,10 +229,10 @@ py -3.12 -m streamlit run app.py
 
 # Future Improvements
 
-- Plotly Interactive Dashboards
-- Real JOIN Analytics Engine
 - AI-generated Insights
 - Natural Language to SQL
+- Dynamic AI Query Generation
+- Dynamic JOIN Builder
 - Database Download Feature
 - Table Rename Feature
 - Authentication System
@@ -200,6 +244,7 @@ py -3.12 -m streamlit run app.py
 - Snowflake Integration
 - Databricks Integration
 - BigQuery Integration
+- LLM-based Analytics Assistant
 
 ---
 
@@ -214,12 +259,14 @@ It demonstrates concepts related to:
 - Data Engineering
 - Analytics Engineering
 - SQL Development
+- Relational Analytics
 - Business Intelligence
 - Warehouse Analytics
 - Dashboard Development
+- Interactive Data Visualization
 
 ---
 
 # Author
 
-Developed using Python, Streamlit, SQL, and Data Engineering concepts.
+Developed using Python, SQL, Streamlit, Plotly, and Data Engineering concepts.
