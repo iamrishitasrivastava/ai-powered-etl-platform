@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
 import sqlite3
 
 # =========================
@@ -481,16 +482,17 @@ ON e.id = f.employee_id
 
             st.dataframe(analytics_df)
 
-            fig1, ax1 = plt.subplots()
-
-            analytics_df.plot(
+            fig1 = px.bar(
+                analytics_df,
                 x="department",
                 y="average_salary",
-                kind="bar",
-                ax=ax1
+                title="Average Salary by Department"
             )
 
-            st.pyplot(fig1)
+            st.plotly_chart(
+                fig1,
+                use_container_width=True
+            )
 
         # KPI METRICS
 
@@ -564,16 +566,16 @@ ON e.id = f.employee_id
 
         for col in numeric_columns:
 
-            fig2, ax2 = plt.subplots()
-
-            cleaned_df[col].plot(
-                kind="hist",
-                ax=ax2
+            fig2 = px.histogram(
+                cleaned_df,
+                x=col,
+                title=f"{col} Distribution"
             )
 
-            ax2.set_title(f"{col} Distribution")
-
-            st.pyplot(fig2)
+            st.plotly_chart(
+                fig2,
+                use_container_width=True
+            )
 
         # =========================
         # AUTO BAR CHARTS
@@ -583,16 +585,22 @@ ON e.id = f.employee_id
 
         for col in numeric_columns:
 
-            fig3, ax3 = plt.subplots()
+            avg_df = pd.DataFrame({
+                "Column": [col],
+                "Average": [cleaned_df[col].mean()]
+            })
 
-            ax3.bar(
-                [col],
-                [cleaned_df[col].mean()]
+            fig3 = px.bar(
+                avg_df,
+                x="Column",
+                y="Average",
+                title=f"Average {col}"
             )
 
-            ax3.set_title(f"Average {col}")
-
-            st.pyplot(fig3)
+            st.plotly_chart(
+                fig3,
+                use_container_width=True
+            )
 
         # =========================
         # CORRELATION MATRIX
@@ -622,14 +630,20 @@ ON e.id = f.employee_id
 
             st.write(dept_count)
 
-            fig4, ax4 = plt.subplots()
-
-            dept_count.plot(
-                kind="bar",
-                ax=ax4
+            fig4 = px.bar(
+                x=dept_count.index,
+                y=dept_count.values,
+                labels={
+                    "x": "Department",
+                    "y": "Employees"
+                },
+                title="Department-wise Employee Count"
             )
 
-            st.pyplot(fig4)
+            st.plotly_chart(
+                fig4,
+                use_container_width=True
+            )
 
             # PIE CHART
 
@@ -661,14 +675,19 @@ ON e.id = f.employee_id
 
             st.dataframe(salary_analysis)
 
-            fig6, ax6 = plt.subplots()
+            salary_df = salary_analysis.reset_index()
 
-            salary_analysis.plot(
-                kind="bar",
-                ax=ax6
+            fig6 = px.bar(
+                salary_df,
+                x="department",
+                y="salary",
+                title="Average Salary by Department"
             )
 
-            st.pyplot(fig6)
+            st.plotly_chart(
+                fig6,
+                use_container_width=True
+            )
 
             highest_department = salary_analysis.idxmax()
 
@@ -688,14 +707,16 @@ ON e.id = f.employee_id
 
             st.subheader("Salary Distribution")
 
-            fig7, ax7 = plt.subplots()
-
-            cleaned_df["salary"].plot(
-                kind="hist",
-                ax=ax7
+            fig7 = px.histogram(
+                cleaned_df,
+                x="salary",
+                title="Salary Distribution"
             )
 
-            st.pyplot(fig7)
+            st.plotly_chart(
+                fig7,
+                use_container_width=True
+            )
 
         # =========================
         # CITY ANALYTICS
@@ -711,14 +732,19 @@ ON e.id = f.employee_id
 
             st.dataframe(city_count)
 
-            fig8, ax8 = plt.subplots()
+            city_df = city_count.reset_index()
 
-            city_count.plot(
-                kind="bar",
-                ax=ax8
+            fig8 = px.bar(
+                city_df,
+                x="city",
+                y=0,
+                title="City-wise Employee Count"
             )
 
-            st.pyplot(fig8)
+            st.plotly_chart(
+                fig8,
+                use_container_width=True
+            )
 
     # =========================
     # TOP EARNERS PAGE
