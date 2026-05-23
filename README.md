@@ -227,6 +227,16 @@ py -3.12 -m streamlit run app.py
 
 ---
 
+# Key Highlights
+
+- Built interactive warehouse analytics dashboards using Plotly
+- Implemented SQL JOIN-based relational analytics
+- Developed multi-table warehouse management using SQLite
+- Added dynamic SQL execution and analytics reporting
+- Created business intelligence style KPI dashboards
+
+---
+
 # Future Improvements
 
 - AI-generated Insights
@@ -266,6 +276,8 @@ It demonstrates concepts related to:
 - Interactive Data Visualization
 
 ---
+
+
 
 # Author
 
