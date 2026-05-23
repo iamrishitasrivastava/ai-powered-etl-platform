@@ -288,6 +288,12 @@ It demonstrates concepts related to:
 
 ---
 
+## Architecture Overview
+
+CSV Upload → ETL Cleaning → SQLite Warehouse → SQL Analytics → Plotly Dashboard → Business Insights
+
+---
+
 
 
 # Author
