@@ -146,6 +146,17 @@ ON e.id = f.employee_id;
 
 ---
 
+## Analytics Stack
+
+- Streamlit Dashboarding
+- Plotly Interactive Visualizations
+- SQLite Warehouse Analytics
+- SQL Reporting
+- KPI Monitoring
+- Relational JOIN Analytics
+
+---
+
 # Data Engineering Concepts Implemented
 
 - ETL Pipelines
