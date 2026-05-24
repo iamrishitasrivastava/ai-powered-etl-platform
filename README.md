@@ -202,6 +202,16 @@ ON e.id = f.employee_id;
 
 ---
 
+## Dashboard Capabilities
+
+- Interactive analytics dashboards
+- Dynamic warehouse reporting
+- Relational data analytics
+- SQL query monitoring
+- Business KPI visualization
+
+---
+
 # SQL Features
 
 ## Example SQL Aggregation Query
