@@ -18,6 +18,16 @@ It combines concepts from:
 
 ---
 
+## Core Objectives
+
+- Build scalable ETL workflows
+- Simulate mini data warehouse architecture
+- Perform SQL-based analytics reporting
+- Generate interactive business dashboards
+- Explore AI-powered analytics concepts
+
+---
+
 # Features
 
 ## Data Ingestion & ETL
