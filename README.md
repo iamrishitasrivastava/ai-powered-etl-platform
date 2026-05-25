@@ -224,7 +224,7 @@ AVG(salary) as average_salary
 FROM employees
 GROUP BY department;
 ```
-
+The platform supports relational analytics using SQL JOIN operations across multiple warehouse tables.
 ---
 
 ## Example JOIN Query
