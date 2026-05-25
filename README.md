@@ -156,6 +156,8 @@ ON e.id = f.employee_id;
 
 ---
 
+This project combines concepts from Data Engineering, SQL Analytics, and Business Intelligence reporting.
+
 ## Analytics Stack
 
 - Streamlit Dashboarding
