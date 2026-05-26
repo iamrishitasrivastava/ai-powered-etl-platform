@@ -3,6 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import sqlite3
+import os
+import shutil
+
+from pyspark.sql import SparkSession
 
 # =========================
 # PAGE CONFIG
@@ -24,6 +28,13 @@ st.caption(
 )
 
 # =========================
+# CREATE DATA FOLDERS
+# =========================
+
+os.makedirs("data/raw", exist_ok=True)
+os.makedirs("data/processed", exist_ok=True)
+
+# =========================
 # SQLITE CONNECTION
 # =========================
 
@@ -31,6 +42,14 @@ conn = sqlite3.connect(
     "employees.db",
     check_same_thread=False
 )
+
+# =========================
+# PYSPARK SESSION
+# =========================
+
+spark = SparkSession.builder \
+    .appName("AI_ETL_PLATFORM") \
+    .getOrCreate()
 
 # =========================
 # SIDEBAR NAVIGATION
@@ -98,15 +117,50 @@ table_name = st.text_input(
 
 if uploaded_file:
 
-    # READ CSV
+    # =========================
+    # SAVE RAW CSV
+    # =========================
 
-    df = pd.read_csv(uploaded_file)
+    raw_file_path = f"data/raw/{uploaded_file.name}"
 
+    with open(raw_file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    # =========================
+    # PANDAS READ
+    # =========================
+
+    df = pd.read_csv(raw_file_path)
+
+    # =========================
+    # PYSPARK READ
+    # =========================
+
+    spark_df = spark.read.csv(
+        raw_file_path,
+        header=True,
+        inferSchema=True
+    )
+
+    # =========================
+    # SCHEMA VALIDATION
+    # =========================
+
+    st.subheader("Schema Validation")
+
+    st.write("Detected Columns:")
+
+    st.write(spark_df.columns)
+
+    # =========================
     # REMOVE DUPLICATES
+    # =========================
 
     cleaned_df = df.drop_duplicates()
 
+    # =========================
     # FILL NUMERIC NULLS
+    # =========================
 
     numeric_fill_columns = cleaned_df.select_dtypes(
         include=["int64", "float64"]
@@ -116,7 +170,67 @@ if uploaded_file:
 
         cleaned_df[col] = cleaned_df[col].fillna(0)
 
+    # =========================
+    # SAVE CLEANED CSV
+    # =========================
+
+    cleaned_csv_path = "data/processed/cleaned_data.csv"
+
+    cleaned_df.to_csv(
+        cleaned_csv_path,
+        index=False
+    )
+
+    # =========================
+    # SAVE PARQUET USING PANDAS
+    # =========================
+
+    parquet_path = "data/processed/cleaned_data.parquet"
+
+    # DELETE OLD PARQUET FILE/FOLDER
+
+    if os.path.exists(parquet_path):
+
+        try:
+
+            if os.path.isfile(parquet_path):
+
+                os.remove(parquet_path)
+
+            else:
+
+                shutil.rmtree(parquet_path)
+
+        except Exception as e:
+
+            st.warning(
+                f"Old parquet cleanup warning: {e}"
+            )
+
+    # SAVE NEW PARQUET
+
+    cleaned_df.to_parquet(
+        parquet_path,
+        index=False
+    )
+
+    st.success(
+        "Parquet file created successfully!"
+    )
+
+    # =========================
+    # PYSPARK DATA PREVIEW
+    # =========================
+
+    st.subheader("PySpark Data Preview")
+
+    st.dataframe(
+        spark_df.limit(5).toPandas()
+    )
+
+    # =========================
     # CHECK TABLE EXISTENCE
+    # =========================
 
     if table_name in available_tables:
 
@@ -126,7 +240,9 @@ if uploaded_file:
 
     else:
 
+        # =========================
         # SAVE TO SQLITE
+        # =========================
 
         cleaned_df.to_sql(
             table_name,
@@ -139,7 +255,13 @@ if uploaded_file:
             f"Table '{table_name}' saved successfully!"
         )
 
+        st.success(
+            "PySpark ETL Pipeline Executed Successfully!"
+        )
+
+        # =========================
         # REFRESH TABLES
+        # =========================
 
         tables_df = pd.read_sql_query(
             tables_query,
@@ -436,10 +558,6 @@ ON e.id = f.employee_id
 
     if page == "Dashboard":
 
-        # =========================
-        # KPI METRICS
-        # =========================
-
         st.subheader(
             "KPI Metrics"
         )
@@ -461,17 +579,9 @@ ON e.id = f.employee_id
             df.duplicated().sum()
         )
 
-        # =========================
-        # RAW DATA
-        # =========================
-
         st.subheader("Raw Dataset")
 
         st.dataframe(df)
-
-        # =========================
-        # DATA TYPES
-        # =========================
 
         st.subheader(
             "Column Data Types"
@@ -483,10 +593,6 @@ ON e.id = f.employee_id
         })
 
         st.dataframe(dtype_df)
-
-        # =========================
-        # DATASET INFO
-        # =========================
 
         st.subheader(
             "Dataset Information"
@@ -502,10 +608,6 @@ ON e.id = f.employee_id
             df.shape[1]
         )
 
-        # =========================
-        # MISSING VALUES
-        # =========================
-
         st.subheader(
             "Missing Values"
         )
@@ -513,10 +615,6 @@ ON e.id = f.employee_id
         st.write(
             df.isnull().sum()
         )
-
-        # =========================
-        # DUPLICATES
-        # =========================
 
         st.subheader(
             "Duplicate Rows"
@@ -526,19 +624,11 @@ ON e.id = f.employee_id
             df.duplicated().sum()
         )
 
-        # =========================
-        # CLEANED DATA
-        # =========================
-
         st.subheader(
             "Cleaned Dataset"
         )
 
         st.dataframe(cleaned_df)
-
-        # =========================
-        # CLEANING SUMMARY
-        # =========================
 
         st.subheader(
             "Before vs After Cleaning"
@@ -564,10 +654,6 @@ ON e.id = f.employee_id
             rows_removed
         )
 
-        # =========================
-        # FILTERED DATA
-        # =========================
-
         st.subheader(
             "Filtered Data"
         )
@@ -575,10 +661,6 @@ ON e.id = f.employee_id
         st.dataframe(
             final_df
         )
-
-        # =========================
-        # SQL RESULT
-        # =========================
 
         st.subheader(
             "SQL Query Result"
@@ -588,244 +670,6 @@ ON e.id = f.employee_id
             sql_df
         )
 
-        # =========================
-        # DOWNLOAD SQL CSV
-        # =========================
-
-        sql_csv = sql_df.to_csv(
-            index=False
-        )
-
-        st.download_button(
-            label="Download SQL Result CSV",
-            data=sql_csv,
-            file_name="sql_result.csv",
-            mime="text/csv"
-        )
-
-        # =========================
-        # DOWNLOAD DATABASE
-        # =========================
-
-        with open(
-            "employees.db",
-            "rb"
-        ) as file:
-
-            st.download_button(
-                label="Download SQLite Database",
-                data=file,
-                file_name="employees.db",
-                mime="application/octet-stream"
-            )
-
-        # =========================
-        # AVAILABLE TABLES
-        # =========================
-
-        st.subheader(
-            "Available Database Tables"
-        )
-
-        st.dataframe(
-            tables_df
-        )
-
-    # =========================
-    # ANALYTICS PAGE
-    # =========================
-
-    elif page == "Analytics":
-
-        # =========================
-        # JOIN ANALYTICS
-        # =========================
-
-        if (
-            "employees" in available_tables
-            and
-            "finance" in available_tables
-        ):
-
-            st.subheader(
-                "Employee + Finance JOIN Analytics"
-            )
-
-            try:
-
-                join_query = """
-
-                SELECT
-                    e.name,
-                    e.department,
-                    e.salary,
-                    f.bonus,
-                    f.project,
-                    f.performance_rating
-
-                FROM employees e
-
-                JOIN finance f
-
-                ON e.id = f.employee_id
-
-                """
-
-                join_df = pd.read_sql_query(
-                    join_query,
-                    conn
-                )
-
-                st.dataframe(
-                    join_df
-                )
-
-                st.subheader(
-                    "Average Bonus by Department"
-                )
-
-                bonus_analysis = join_df.groupby(
-                    "department"
-                )["bonus"].mean()
-
-                bonus_df = bonus_analysis.reset_index()
-
-                fig_join = px.bar(
-                    bonus_df,
-                    x="department",
-                    y="bonus",
-                    title="Average Bonus by Department"
-                )
-
-                st.plotly_chart(
-                    fig_join,
-                    use_container_width=True
-                )
-
-            except Exception as e:
-
-                st.error(
-                    f"JOIN Error: {e}"
-                )
-
-        # =========================
-        # SALARY DISTRIBUTION
-        # =========================
-
-        if "salary" in cleaned_df.columns:
-
-            st.subheader(
-                "Salary Distribution"
-            )
-
-            fig_salary = px.box(
-                cleaned_df,
-                y="salary",
-                title="Salary Spread Analysis"
-            )
-
-            st.plotly_chart(
-                fig_salary,
-                use_container_width=True
-            )
-
-        # =========================
-        # DEPARTMENT DISTRIBUTION
-        # =========================
-
-        if "department" in cleaned_df.columns:
-
-            st.subheader(
-                "Department Employee Count"
-            )
-
-            dept_df = cleaned_df[
-                "department"
-            ].value_counts()
-
-            dept_df = dept_df.reset_index()
-
-            dept_df.columns = [
-                "department",
-                "count"
-            ]
-
-            fig_dept = px.pie(
-                dept_df,
-                names="department",
-                values="count",
-                title="Department Distribution"
-            )
-
-            st.plotly_chart(
-                fig_dept,
-                use_container_width=True
-            )
-
-        # =========================
-        # NUMERIC VISUALIZATION
-        # =========================
-
-        numeric_columns = cleaned_df.select_dtypes(
-            include=["int64", "float64"]
-        ).columns
-
-        st.subheader(
-            "Numeric Column Visualizations"
-        )
-
-        for col in numeric_columns:
-
-            fig2 = px.histogram(
-                cleaned_df,
-                x=col,
-                title=f"{col} Distribution"
-            )
-
-            st.plotly_chart(
-                fig2,
-                use_container_width=True
-            )
-
-        # =========================
-        # CORRELATION MATRIX
-        # =========================
-
-        if len(numeric_columns) > 1:
-
-            st.subheader(
-                "Correlation Matrix"
-            )
-
-            correlation_df = cleaned_df[
-                numeric_columns
-            ].corr()
-
-            st.dataframe(
-                correlation_df
-            )
-
-    # =========================
-    # TOP EARNERS PAGE
-    # =========================
-
-    elif page == "Top Earners":
-
-        if "salary" in cleaned_df.columns:
-
-            st.subheader(
-                "Top Earners"
-            )
-
-            top_earners = cleaned_df.sort_values(
-                by="salary",
-                ascending=False
-            ).head(5)
-
-            st.dataframe(
-                top_earners
-            )
-
 # =========================
 # FOOTER
 # =========================
@@ -833,5 +677,5 @@ ON e.id = f.employee_id
 st.markdown("---")
 
 st.caption(
-    "Built using Python, Streamlit, SQLite, Plotly, and Data Engineering concepts"
+    "Built using Python, Streamlit, SQLite, PySpark, Plotly, and Data Engineering concepts"
 )
