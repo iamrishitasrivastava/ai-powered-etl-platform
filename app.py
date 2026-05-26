@@ -5,10 +5,32 @@ import plotly.express as px
 import sqlite3
 
 # =========================
+# PAGE CONFIG
+# =========================
+
+st.set_page_config(
+    page_title="AI ETL Warehouse Platform",
+    layout="wide"
+)
+
+# =========================
 # TITLE
 # =========================
 
 st.title("AI-Powered Intelligent ETL Platform")
+
+st.caption(
+    "ETL • SQL Analytics • Warehouse Reporting • Business Intelligence"
+)
+
+# =========================
+# SQLITE CONNECTION
+# =========================
+
+conn = sqlite3.connect(
+    "employees.db",
+    check_same_thread=False
+)
 
 # =========================
 # SIDEBAR NAVIGATION
@@ -24,10 +46,12 @@ page = st.sidebar.radio(
 )
 
 # =========================
-# SQLITE CONNECTION
+# DATABASE STATUS
 # =========================
 
-conn = sqlite3.connect("employees.db")
+st.sidebar.success(
+    "Database Connected Successfully"
+)
 
 # =========================
 # SHOW DATABASE TABLES
@@ -78,7 +102,7 @@ if uploaded_file:
 
     df = pd.read_csv(uploaded_file)
 
-    # CLEAN DATA
+    # REMOVE DUPLICATES
 
     cleaned_df = df.drop_duplicates()
 
@@ -92,9 +116,7 @@ if uploaded_file:
 
         cleaned_df[col] = cleaned_df[col].fillna(0)
 
-    # =========================
-    # CHECK IF TABLE EXISTS
-    # =========================
+    # CHECK TABLE EXISTENCE
 
     if table_name in available_tables:
 
@@ -104,7 +126,7 @@ if uploaded_file:
 
     else:
 
-        # SAVE TABLE
+        # SAVE TO SQLITE
 
         cleaned_df.to_sql(
             table_name,
@@ -117,7 +139,7 @@ if uploaded_file:
             f"Table '{table_name}' saved successfully!"
         )
 
-        # REFRESH TABLE LIST
+        # REFRESH TABLES
 
         tables_df = pd.read_sql_query(
             tables_query,
@@ -127,7 +149,7 @@ if uploaded_file:
         available_tables = tables_df["name"].tolist()
 
 # =========================
-# TABLE SELECTOR
+# TABLE SELECTION
 # =========================
 
 if len(available_tables) > 0:
@@ -137,8 +159,12 @@ if len(available_tables) > 0:
         available_tables
     )
 
+    st.sidebar.info(
+        f"Current Table: {selected_table}"
+    )
+
     # =========================
-    # TABLE ROW COUNT
+    # ROW COUNT
     # =========================
 
     row_count_query = f"""
@@ -161,7 +187,7 @@ if len(available_tables) > 0:
     )
 
     # =========================
-    # SHOW TABLE COLUMNS
+    # TABLE COLUMNS
     # =========================
 
     columns_query = f"""
@@ -190,6 +216,8 @@ if len(available_tables) > 0:
     st.code("""
 
 SELECT e.name,
+e.department,
+e.salary,
 f.bonus,
 f.project
 
@@ -202,12 +230,14 @@ ON e.id = f.employee_id
 """, language="sql")
 
     # =========================
-    # DELETE TABLE FEATURE
+    # DELETE TABLE
     # =========================
 
     st.sidebar.subheader("Delete Table")
 
-    if st.sidebar.button("Delete Selected Table"):
+    if st.sidebar.button(
+        "Delete Selected Table"
+    ):
 
         conn.execute(
             f"DROP TABLE IF EXISTS {selected_table}"
@@ -222,7 +252,7 @@ ON e.id = f.employee_id
         st.rerun()
 
     # =========================
-    # LOAD SELECTED TABLE
+    # LOAD TABLE
     # =========================
 
     cleaned_df = pd.read_sql_query(
@@ -233,12 +263,14 @@ ON e.id = f.employee_id
     df = cleaned_df.copy()
 
     # =========================
-    # FILTER DATA
+    # FILTER SECTION
     # =========================
 
     if "department" in cleaned_df.columns:
 
-        st.sidebar.subheader("Filter by Department")
+        st.sidebar.subheader(
+            "Filter by Department"
+        )
 
         department = st.sidebar.selectbox(
             "Choose Department",
@@ -254,12 +286,14 @@ ON e.id = f.employee_id
         filtered_df = cleaned_df
 
     # =========================
-    # SEARCH EMPLOYEE
+    # SEARCH SECTION
     # =========================
 
     if "name" in cleaned_df.columns:
 
-        st.sidebar.subheader("Search Employee")
+        st.sidebar.subheader(
+            "Search Employee"
+        )
 
         search_name = st.sidebar.text_input(
             "Enter Employee Name"
@@ -335,7 +369,7 @@ ON e.id = f.employee_id
             """
 
     # =========================
-    # CUSTOM SQL INPUT
+    # CUSTOM SQL QUERY
     # =========================
 
     st.subheader("Custom SQL Query")
@@ -349,7 +383,7 @@ ON e.id = f.employee_id
     )
 
     # =========================
-    # SQL QUERY HISTORY
+    # QUERY HISTORY
     # =========================
 
     if "query_history" not in st.session_state:
@@ -362,7 +396,9 @@ ON e.id = f.employee_id
             custom_query
         )
 
-    st.sidebar.subheader("Recent Queries")
+    st.sidebar.subheader(
+        "Recent Queries"
+    )
 
     for q in st.session_state.query_history[-5:]:
 
@@ -372,7 +408,7 @@ ON e.id = f.employee_id
         )
 
     # =========================
-    # SQL QUERY EXECUTION
+    # EXECUTE SQL
     # =========================
 
     try:
@@ -389,38 +425,7 @@ ON e.id = f.employee_id
         sql_df = pd.DataFrame()
 
     # =========================
-    # SQL ANALYTICS QUERY
-    # =========================
-
-    analytics_df = pd.DataFrame()
-
-    if "department" in cleaned_df.columns and "salary" in cleaned_df.columns:
-
-        analytics_query = f"""
-
-        SELECT
-
-            department,
-
-            COUNT(*) as total_employees,
-
-            AVG(salary) as average_salary,
-
-            MAX(salary) as highest_salary
-
-        FROM {selected_table}
-
-        GROUP BY department
-
-        """
-
-        analytics_df = pd.read_sql_query(
-            analytics_query,
-            conn
-        )
-
-    # =========================
-    # FINAL DATA
+    # FINAL FILTERED DATA
     # =========================
 
     final_df = search_df
@@ -431,49 +436,165 @@ ON e.id = f.employee_id
 
     if page == "Dashboard":
 
+        # =========================
+        # KPI METRICS
+        # =========================
+
+        st.subheader(
+            "KPI Metrics"
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Total Rows",
+            df.shape[0]
+        )
+
+        col2.metric(
+            "Total Columns",
+            df.shape[1]
+        )
+
+        col3.metric(
+            "Duplicate Rows",
+            df.duplicated().sum()
+        )
+
+        # =========================
+        # RAW DATA
+        # =========================
+
         st.subheader("Raw Dataset")
 
         st.dataframe(df)
 
-        st.subheader("Dataset Information")
+        # =========================
+        # DATA TYPES
+        # =========================
 
-        st.write("Rows:", df.shape[0])
+        st.subheader(
+            "Column Data Types"
+        )
 
-        st.write("Columns:", df.shape[1])
+        dtype_df = pd.DataFrame({
+            "Column": df.columns,
+            "Data Type": df.dtypes.astype(str)
+        })
 
-        st.subheader("Missing Values")
+        st.dataframe(dtype_df)
 
-        st.write(df.isnull().sum())
+        # =========================
+        # DATASET INFO
+        # =========================
 
-        st.subheader("Duplicate Rows")
+        st.subheader(
+            "Dataset Information"
+        )
 
-        st.write(df.duplicated().sum())
+        st.write(
+            "Rows:",
+            df.shape[0]
+        )
 
-        st.subheader("Cleaned Dataset")
+        st.write(
+            "Columns:",
+            df.shape[1]
+        )
+
+        # =========================
+        # MISSING VALUES
+        # =========================
+
+        st.subheader(
+            "Missing Values"
+        )
+
+        st.write(
+            df.isnull().sum()
+        )
+
+        # =========================
+        # DUPLICATES
+        # =========================
+
+        st.subheader(
+            "Duplicate Rows"
+        )
+
+        st.write(
+            df.duplicated().sum()
+        )
+
+        # =========================
+        # CLEANED DATA
+        # =========================
+
+        st.subheader(
+            "Cleaned Dataset"
+        )
 
         st.dataframe(cleaned_df)
 
-        st.subheader("Before vs After Cleaning")
+        # =========================
+        # CLEANING SUMMARY
+        # =========================
 
-        st.write("Original Rows:", df.shape[0])
+        st.subheader(
+            "Before vs After Cleaning"
+        )
 
-        st.write("Cleaned Rows:", cleaned_df.shape[0])
+        st.write(
+            "Original Rows:",
+            df.shape[0]
+        )
 
-        rows_removed = df.shape[0] - cleaned_df.shape[0]
+        st.write(
+            "Cleaned Rows:",
+            cleaned_df.shape[0]
+        )
 
-        st.write("Rows Removed:", rows_removed)
+        rows_removed = (
+            df.shape[0]
+            - cleaned_df.shape[0]
+        )
 
-        st.subheader("Filtered Data")
+        st.write(
+            "Rows Removed:",
+            rows_removed
+        )
 
-        st.dataframe(final_df)
+        # =========================
+        # FILTERED DATA
+        # =========================
 
-        st.subheader("SQL Query Result")
+        st.subheader(
+            "Filtered Data"
+        )
 
-        st.dataframe(sql_df)
+        st.dataframe(
+            final_df
+        )
 
-        # DOWNLOAD SQL RESULT
+        # =========================
+        # SQL RESULT
+        # =========================
 
-        sql_csv = sql_df.to_csv(index=False)
+        st.subheader(
+            "SQL Query Result"
+        )
+
+        st.dataframe(
+            sql_df
+        )
+
+        # =========================
+        # DOWNLOAD SQL CSV
+        # =========================
+
+        sql_csv = sql_df.to_csv(
+            index=False
+        )
 
         st.download_button(
             label="Download SQL Result CSV",
@@ -482,11 +603,33 @@ ON e.id = f.employee_id
             mime="text/csv"
         )
 
+        # =========================
+        # DOWNLOAD DATABASE
+        # =========================
+
+        with open(
+            "employees.db",
+            "rb"
+        ) as file:
+
+            st.download_button(
+                label="Download SQLite Database",
+                data=file,
+                file_name="employees.db",
+                mime="application/octet-stream"
+            )
+
+        # =========================
         # AVAILABLE TABLES
+        # =========================
 
-        st.subheader("Available Database Tables")
+        st.subheader(
+            "Available Database Tables"
+        )
 
-        st.dataframe(tables_df)
+        st.dataframe(
+            tables_df
+        )
 
     # =========================
     # ANALYTICS PAGE
@@ -498,9 +641,15 @@ ON e.id = f.employee_id
         # JOIN ANALYTICS
         # =========================
 
-        if "employees" in available_tables and "finance" in available_tables:
+        if (
+            "employees" in available_tables
+            and
+            "finance" in available_tables
+        ):
 
-            st.subheader("Employee + Finance JOIN Analytics")
+            st.subheader(
+                "Employee + Finance JOIN Analytics"
+            )
 
             try:
 
@@ -527,9 +676,13 @@ ON e.id = f.employee_id
                     conn
                 )
 
-                st.dataframe(join_df)
+                st.dataframe(
+                    join_df
+                )
 
-                st.subheader("Average Bonus by Department")
+                st.subheader(
+                    "Average Bonus by Department"
+                )
 
                 bonus_analysis = join_df.groupby(
                     "department"
@@ -551,17 +704,75 @@ ON e.id = f.employee_id
 
             except Exception as e:
 
-                st.error(f"JOIN Error: {e}")
+                st.error(
+                    f"JOIN Error: {e}"
+                )
 
         # =========================
-        # NUMERIC COLUMNS
+        # SALARY DISTRIBUTION
+        # =========================
+
+        if "salary" in cleaned_df.columns:
+
+            st.subheader(
+                "Salary Distribution"
+            )
+
+            fig_salary = px.box(
+                cleaned_df,
+                y="salary",
+                title="Salary Spread Analysis"
+            )
+
+            st.plotly_chart(
+                fig_salary,
+                use_container_width=True
+            )
+
+        # =========================
+        # DEPARTMENT DISTRIBUTION
+        # =========================
+
+        if "department" in cleaned_df.columns:
+
+            st.subheader(
+                "Department Employee Count"
+            )
+
+            dept_df = cleaned_df[
+                "department"
+            ].value_counts()
+
+            dept_df = dept_df.reset_index()
+
+            dept_df.columns = [
+                "department",
+                "count"
+            ]
+
+            fig_dept = px.pie(
+                dept_df,
+                names="department",
+                values="count",
+                title="Department Distribution"
+            )
+
+            st.plotly_chart(
+                fig_dept,
+                use_container_width=True
+            )
+
+        # =========================
+        # NUMERIC VISUALIZATION
         # =========================
 
         numeric_columns = cleaned_df.select_dtypes(
             include=["int64", "float64"]
         ).columns
 
-        st.subheader("Numeric Column Visualizations")
+        st.subheader(
+            "Numeric Column Visualizations"
+        )
 
         for col in numeric_columns:
 
@@ -582,13 +793,17 @@ ON e.id = f.employee_id
 
         if len(numeric_columns) > 1:
 
-            st.subheader("Correlation Matrix")
+            st.subheader(
+                "Correlation Matrix"
+            )
 
             correlation_df = cleaned_df[
                 numeric_columns
             ].corr()
 
-            st.dataframe(correlation_df)
+            st.dataframe(
+                correlation_df
+            )
 
     # =========================
     # TOP EARNERS PAGE
@@ -598,11 +813,25 @@ ON e.id = f.employee_id
 
         if "salary" in cleaned_df.columns:
 
-            st.subheader("Top Earners")
+            st.subheader(
+                "Top Earners"
+            )
 
             top_earners = cleaned_df.sort_values(
                 by="salary",
                 ascending=False
             ).head(5)
 
-            st.dataframe(top_earners)
+            st.dataframe(
+                top_earners
+            )
+
+# =========================
+# FOOTER
+# =========================
+
+st.markdown("---")
+
+st.caption(
+    "Built using Python, Streamlit, SQLite, Plotly, and Data Engineering concepts"
+)
