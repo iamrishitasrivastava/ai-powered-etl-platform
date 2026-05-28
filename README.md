@@ -43,6 +43,16 @@ It combines concepts from:
 
 ---
 
+## Platform Capabilities
+
+- End-to-end ETL workflow execution
+- Warehouse-style analytics processing
+- SQL-driven reporting engine
+- Interactive dashboard generation
+- Multi-table relational analytics
+
+---
+
 # Data Warehouse Features
 
 - SQLite Data Warehouse Integration
@@ -185,6 +195,10 @@ This project combines concepts from Data Engineering, SQL Analytics, and Busines
 - Business Intelligence Reporting
 
 ---
+
+## Warehouse Workflow
+
+Raw CSV → Data Cleaning → SQLite Storage → SQL Analytics → Dashboard Reporting
 
 # Dashboard Functionalities
 
