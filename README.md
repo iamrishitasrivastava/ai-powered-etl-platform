@@ -307,6 +307,14 @@ py -3.12 -m streamlit run app.py
 
 ---
 
+# Performance Features
+
+- Fast SQL query execution
+- Lightweight SQLite warehouse storage
+- Interactive Plotly visualizations
+- Dynamic analytics rendering
+- Scalable ETL architecture using PySpark
+
 # Project Type
 
 This project evolved from a simple ETL application into a:
