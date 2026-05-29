@@ -258,7 +258,26 @@ if uploaded_file:
         st.success(
             "PySpark ETL Pipeline Executed Successfully!"
         )
+        
+# =========================
+# ETL SUMMARY
+# =========================
 
+
+        st.subheader("ETL Execution Summary")
+        summary_df = pd.DataFrame({
+            "Metric": [
+                "Original Rows",
+                "Cleaned Rows",
+                "Duplicates Removed"
+                ],
+                "Value": [
+                    len(df),
+                    len(cleaned_df),
+                    len(df) - len(cleaned_df)
+                    ]
+                    })
+        st.dataframe(summary_df)
         # =========================
         # REFRESH TABLES
         # =========================
@@ -561,6 +580,28 @@ ON e.id = f.employee_id
         st.subheader(
             "KPI Metrics"
         )
+        # =========================
+# DATA QUALITY SCORE
+# =========================
+
+        missing_cells = df.isnull().sum().sum()
+        total_cells = (
+            df.shape[0]
+            * df.shape[1]
+            )
+        
+        if total_cells > 0:
+            quality_score = round(
+                (
+                    (total_cells - missing_cells)
+                    / total_cells
+                    ) * 100,
+                    2
+                    )
+            st.metric(
+                "Data Quality Score",
+                f"{quality_score}%"
+                )
 
         col1, col2, col3 = st.columns(3)
 
@@ -669,6 +710,23 @@ ON e.id = f.employee_id
         st.dataframe(
             sql_df
         )
+        # =========================
+# DOWNLOAD CLEANED CSV
+# =========================
+
+        if os.path.exists(
+            "data/processed/cleaned_data.csv"
+            ):
+            with open(
+                "data/processed/cleaned_data.csv",
+                "rb"
+                ) as file:
+                st.download_button(
+                    label="Download Cleaned CSV",
+                    data=file,
+                    file_name="cleaned_data.csv",
+                    mime="text/csv"
+                    )
 
 # =========================
 # FOOTER

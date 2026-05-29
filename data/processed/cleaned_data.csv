@@ -1,7 +1,7 @@
-id,employee_id,bonus,performance_rating,project,year
-1,1,10000,5,AI Platform,2025
-2,2,5000,3,HR Automation,2025
-3,3,12000,5,Data Warehouse,2025
-4,4,7000,4,Finance Dashboard,2025
-5,5,4000,2,Recruitment System,2025
-6,6,15000,5,Sales Prediction,2025
+id,name,salary,department,city
+1,Priya,50000.0,IT,Delhi
+2,Rahul,0.0,HR,Mumbai
+3,Aman,70000.0,IT,Bangalore
+4,Sneha,65000.0,Finance,Pune
+5,Rahul,0.0,HR,Mumbai
+6,Karan,80000.0,Sales,Delhi
