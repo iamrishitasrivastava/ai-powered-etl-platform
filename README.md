@@ -318,9 +318,10 @@ py -3.12 -m streamlit run app.py
 # Project Type
 
 
-
-
 This project evolved from a simple ETL application into a:
+
+
+
 
 ## AI-Powered Mini Data Warehouse & Analytics Platform
 
