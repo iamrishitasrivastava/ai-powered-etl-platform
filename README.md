@@ -321,8 +321,6 @@ py -3.12 -m streamlit run app.py
 This project evolved from a simple ETL application into a:
 
 
-
-
 ## AI-Powered Mini Data Warehouse & Analytics Platform
 
 It demonstrates concepts related to:
@@ -343,6 +341,8 @@ It demonstrates concepts related to:
 CSV Upload → ETL Cleaning → SQLite Warehouse → SQL Analytics → Plotly Dashboard → Business Insights
 
 ---
+
+
 
 
 
