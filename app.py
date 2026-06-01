@@ -456,72 +456,53 @@ ON e.id = f.employee_id
     else:
 
         search_df = filtered_df
-
-    # =========================
-    # AI SQL SUGGESTIONS
-    # =========================
-
-    st.subheader("AI SQL Suggestions")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        if st.button("Show Top Rows"):
-
-            st.session_state.custom_query = f"""
-
+        
+        
+        st.subheader("AI Query Assistant")
+        query_examples = {
+            "Show Top 5 Records":
+            f"""
             SELECT *
-
             FROM {selected_table}
-
             LIMIT 5
-
-            """
-
-        if st.button("Show Total Rows"):
-
-            st.session_state.custom_query = f"""
-
+            """,
+            
+            "Show Total Rows":
+            f"""
             SELECT COUNT(*) as total_rows
-
             FROM {selected_table}
-
-            """
-
-    with col2:
-
-        if st.button("Show All Data"):
-
-            st.session_state.custom_query = f"""
-
-            SELECT *
-
-            FROM {selected_table}
-
-            """
-
-        if st.button("Show Column Names"):
-
-            st.session_state.custom_query = f"""
-
-            PRAGMA table_info({selected_table})
-
-            """
-
-    # =========================
+""",
+"Department Wise Count":
+f"""
+SELECT department,
+COUNT(*) as total_employees
+FROM {selected_table}
+GROUP BY department
+"""
+}
+        selected_prompt = st.selectbox(
+            "Choose Business Question",
+            list(query_examples.keys())
+            )
+        if st.button("Generate SQL"):
+            st.session_state.custom_query = query_examples[
+                selected_prompt
+                ]
+            st.rerun()
+               # =========================
     # CUSTOM SQL QUERY
     # =========================
 
-    st.subheader("Custom SQL Query")
-
-    custom_query = st.text_area(
-        "Enter SQL Query",
-        value=st.session_state.get(
-            "custom_query",
-            f"SELECT * FROM {selected_table}"
-        )
-    )
+            
+            
+            st.subheader("Custom SQL Query")
+            custom_query = st.text_area(
+                "Enter SQL Query",
+                value=st.session_state.get(
+                    "custom_query",
+                    f"SELECT * FROM {selected_table}"
+                    )
+                    )
 
     # =========================
     # QUERY HISTORY
