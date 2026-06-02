@@ -345,5 +345,5 @@ CSV Upload → ETL Cleaning → SQLite Warehouse → SQL Analytics → Plotly Da
 
 # Author
 
-Developed using Python, SQL, Streamlit, Plotly, and Data Engineering concepts.
+Developed using Python, SQL, Streamlit, Plotly, and Data Engineering concepts....
 
